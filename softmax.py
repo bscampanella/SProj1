@@ -32,11 +32,26 @@ def softmax_loss_naive(W, X, y, reg):
     # regularization!                                                           #
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+    numExamples = X.shape[0]
+    numClasses = W.shape[1]
 
-    pass
-
+    LossMat = X.dot(W)
+    for i in range(numExamples):
+      LossMat[i] -= np.amax(LossMat[i])
+      scoreArr = np.exp(LossMat[i])/np.sum(np.exp(LossMat[i]))
+      loss += -np.log(scoreArr[y[i]])
+      #tempGradMat = np.zeros(W.shape)
+      for j in range(numClasses):
+        tempGradArr = (scoreArr[j] - (y[i] == j)) * X[i]
+        dW[:,j] += tempGradArr
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
+    loss /= numExamples
+    loss -= reg * np.sum(W*W)
+
+    dW /= numExamples
+    dW += reg * 2 * W
+    
     return loss, dW
 
 
@@ -57,9 +72,35 @@ def softmax_loss_vectorized(W, X, y, reg):
     # regularization!                                                           #
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+    numExamples = X.shape[0]
+    
+    #loss first
+    scoreMat = np.dot(X, W)
 
-    pass
+    correctVec = scoreMat[np.arange(numExamples), y]
+    correctVecExp = np.exp(correctVec)
 
+    sumExpRow = np.sum(np.exp(scoreMat), axis = 1)
+
+    lossVec = correctVecExp / sumExpRow
+    lossVec = -np.log(lossVec)
+    loss = np.sum(lossVec)
+
+    loss /= numExamples
+    loss += reg * np.sum(W * W)
+
+    #gradient
+    expScoreMat = np.exp(scoreMat)
+    expScoreMatNormalized = expScoreMat / sumExpRow[:,None]
+
+    subtractMat = np.zeros_like(scoreMat)
+    subtractMat[np.arange(numExamples), y] = 1
+
+    gradCoefMat = expScoreMatNormalized - subtractMat
+
+    dW = np.dot(X.T, gradCoefMat)
+    dW /= numExamples
+    dW += reg * 2 * W
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
     return loss, dW
