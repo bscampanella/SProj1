@@ -79,8 +79,10 @@ class TwoLayerNet(object):
         # shape (N, C).                                                             #
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-        pass
+        HL1 = np.dot(X,W1) + b1
+        HL1OG = HL1
+        HL1[HL1 <= 0] = 0
+        scores = np.dot(HL1, W2) + b2
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -97,9 +99,14 @@ class TwoLayerNet(object):
         # classifier loss.                                                          #
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-        pass
-
+        scores -= np.max(scores, axis=1)[:,None]
+        scoresExp = np.exp(scores)
+        NormallizedScores = scoresExp/np.sum(scoresExp, axis=1)[:,None]
+        softmaxLossArr = -np.log(NormallizedScores[np.arange(N),y])
+        loss = np.sum(softmaxLossArr) / N
+        #regularization W1, W2
+        loss += reg * np.sum(W1*W1)
+        loss += reg * np.sum(W2*W2)
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
         # Backward pass: compute gradients
@@ -111,8 +118,25 @@ class TwoLayerNet(object):
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        NormallizedScores[np.arange(N),y] -= 1
+        NormallizedScores /= N
 
+        dW2 = np.dot(HL1OG.T, NormallizedScores)
+        dW2 += reg * 2 * W2
+        db2 = np.sum(NormallizedScores, axis=0)
+
+        gFlow = np.dot(W2, NormallizedScores.T)
+        HL1[HL1 > 0] = 1
+        gFlow *= HL1.T
+        dW1 = np.dot(X.T, gFlow.T)
+        dW1 += reg * 2 * W1
+        db1 = np.sum(gFlow.T, axis=0)
+
+        grads['W2'] = dW2
+        grads['b2'] = db2
+
+        grads['W1'] = dW1
+        grads['b1'] = db1
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
         return loss, grads
@@ -155,8 +179,9 @@ class TwoLayerNet(object):
             # them in X_batch and y_batch respectively.                             #
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-            pass
+            arrRandomIters = np.random.choice(num_train, batch_size)
+            X_batch = X[arrRandomIters]
+            y_batch = y[arrRandomIters]
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -171,8 +196,10 @@ class TwoLayerNet(object):
             # stored in the grads dictionary defined above.                         #
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-            pass
+            self.params['W1'] -= learning_rate * grads['W1']
+            self.params['b1'] -= learning_rate * grads['b1']
+            self.params['W2'] -= learning_rate * grads['W2']
+            self.params['b2'] -= learning_rate * grads['b2']
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -217,9 +244,10 @@ class TwoLayerNet(object):
         # TODO: Implement this function; it should be VERY simple!                #
         ###########################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-        pass
-
+        HL1 = np.dot(X ,self.params['W1']) + self.params['b1']
+        HL1[HL1 <= 0] = 0
+        ScoreMat = np.dot(HL1 ,self.params['W2']) + self.params['b2']
+        y_pred = np.argmax(ScoreMat, axis=1)
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
         return y_pred

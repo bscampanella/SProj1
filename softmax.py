@@ -76,7 +76,7 @@ def softmax_loss_vectorized(W, X, y, reg):
     
     #loss first
     scoreMat = np.dot(X, W)
-
+    scoreMat -= np.max(scoreMat, axis=1)[:,None]
     correctVec = scoreMat[np.arange(numExamples), y]
     correctVecExp = np.exp(correctVec)
 
